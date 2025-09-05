@@ -2,6 +2,7 @@ export { AuthProvider } from './components/AuthProvider';
 export { LoginScreen } from './components/LoginScreen';
 export { LogoutButton } from './components/LogoutButton';
 export { withAuthGuard } from './components/withAuthGuard';
+export { toaster, Toaster } from './components/ui/toaster';
 
 export { useAuth } from './hooks/use-auth';
 
@@ -13,7 +14,7 @@ export type {
   User,
   TelegramLoginWidgetData,
   TelegramDeepLinkUserData,
-  TelegramDeepLinkAuthData
+  TelegramDeepLinkAuthData,
 } from './types';
 
 export { tokenStorage } from './storage';
