@@ -61,9 +61,9 @@ export class AuthApi {
     const refreshToken = tokenStorage.getRefreshToken();
     if (!refreshToken) return;
 
-    await apiRequest<void>('/auth/logout', {
+    await apiRequest<void>('/api/v1/auth/telegram/logout', {
       method: 'POST',
-      body: JSON.stringify({ refreshToken }),
+      body: null,
     }).catch(() => {});
   }
 }
