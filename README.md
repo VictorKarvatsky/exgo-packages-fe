@@ -9,7 +9,9 @@ cd path/to/your-new-project
 ```
 
 ### Добавляем submodule с библиотеками
-git submodule add -b main https://github.com/VictorKarvatsky/exgo-packages-fe.git libs/shared
+```bash
+git submodule add -f -b main https://github.com/VictorKarvatsky/exgo-packages-fe.git libs/shared
+```
 
 ### Инициализируем submodule
 git submodule update --init --recursive
