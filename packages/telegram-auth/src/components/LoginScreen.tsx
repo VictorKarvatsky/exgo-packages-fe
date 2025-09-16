@@ -9,6 +9,9 @@ import {
   Spinner,
   Flex,
   Stack,
+  useBreakpointValue,
+  Icon,
+  HStack,
 } from '@chakra-ui/react';
 import { LoginButton } from '@telegram-auth/react';
 import { useAuth } from '../hooks/use-auth';
@@ -19,6 +22,8 @@ import type {
 } from '../types';
 import { toaster } from './ui/toaster';
 import { LoginContainer } from './ui/LoginContainer';
+import { TelegramButton } from './ui/TelegramButton';
+import { ExgoIcon, TelegramIcon } from '../icons/common';
 
 type LoginScreenProps = {
   texts?: {
@@ -58,6 +63,7 @@ export const LoginScreen: FC<LoginScreenProps> = ({ texts = {} }) => {
   const t = { ...defaultTexts, ...texts };
   const [loginMethod, setLoginMethod] = useState<'twa' | 'widget' | null>(null);
   const [isProcessingDeepLink, setIsProcessingDeepLink] = useState(false);
+  const isMobile = useBreakpointValue({ base: true, md: false });
 
   const handleTelegramDeepLinkAuth = useCallback(
     async (
@@ -212,7 +218,7 @@ export const LoginScreen: FC<LoginScreenProps> = ({ texts = {} }) => {
       <Flex minH="100vh" align="center" justify="center" bg="app.bg">
         <VStack gap={4}>
           <Spinner size="xl" color="brand.500" />
-          <Text color="card.fg">
+          <Text color="white">
             {isProcessingDeepLink
               ? 'Processing Telegram authorization...'
               : 'Authenticating...'}
@@ -224,110 +230,123 @@ export const LoginScreen: FC<LoginScreenProps> = ({ texts = {} }) => {
 
   return (
     <Flex minH="100vh" align="center" justify="center" bg="app.bg" p={4}>
-      <LoginContainer>
-        <Stack gap="5" p="4">
-          <VStack gap={4} textAlign="center">
-            <Heading
-              size={{ base: 'xl', md: '2xl' }}
-              color="gray.700"
-              _dark={{ color: 'gray.200' }}
-            >
+      <VStack gap={4} align="center" w="full" maxW="500px">
+        <LoginContainer>
+          <Stack gap={isMobile ? '4' : '5'} px="1">
+            <Heading size="xl" lineHeight="1.625rem">
               {t.title}
             </Heading>
-            <Text
-              color="gray.500"
-              _dark={{ color: 'gray.400' }}
-              fontSize={{ base: 'md', md: 'lg' }}
-            >
+
+            <Text textStyle="sm" color="gray.600">
               Войдите через Telegram
             </Text>
-          </VStack>
 
-          {state.error && (
-            <Alert.Root status="error" rounded="xl">
-              <Alert.Indicator />
-              <Alert.Title>{state.error}</Alert.Title>
-            </Alert.Root>
-          )}
-
-          <VStack gap={6} align="center" maxW="400px" mx="auto" w="full">
-            {loginMethod === 'twa' && (
-              <VStack gap={4} w="full">
-                <Text
-                  fontSize="sm"
-                  color="gray.600"
-                  _dark={{ color: 'gray.400' }}
-                  textAlign="center"
-                >
-                  You are using Telegram Web App
-                </Text>
-                <Button
-                  colorScheme="telegram"
-                  size="lg"
-                  w="full"
-                  rounded="xl"
-                  onClick={handleTelegramWebAppAuth}
-                  loading={state.isLoading}
-                  loadingText="Signing in..."
-                >
-                  Sign in with Telegram
-                </Button>
-              </VStack>
-            )}
-
-            {loginMethod === 'widget' && (
-              <VStack gap={4} w="full">
-                <Text
-                  fontSize="sm"
-                  color="gray.600"
-                  _dark={{ color: 'gray.400' }}
-                  textAlign="center"
-                >
-                  Click the button below to sign in with Telegram
-                </Text>
-
-                <Flex justify="center" align="center" w="full">
-                  <LoginButton
-                    botUsername="tsssss_test_bot"
-                    buttonSize="large"
-                    onAuthCallback={handleTelegramWidgetAuth}
-                  />
-                </Flex>
-
-                <Box
-                  fontSize="xs"
-                  color="gray.500"
-                  _dark={{ color: 'gray.500' }}
-                  textAlign="center"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  gap={2}
-                >
-                  <Text as="span">or</Text>
-                  <Button
-                    {...pillButtonStyles}
-                    onClick={handleOpenTelegramApp}
-                    disabled={state.isLoading || isProcessingDeepLink}
-                  >
-                    open in Telegram app
-                  </Button>
-                </Box>
-              </VStack>
-            )}
-
-            {!loginMethod && (
-              <Alert.Root status="warning" rounded="xl">
+            {state.error && (
+              <Alert.Root status="error" rounded="xl">
                 <Alert.Indicator />
-                <Alert.Title>
-                  Unable to determine login method. Please check your
-                  configuration.
-                </Alert.Title>
+                <Alert.Title>{state.error}</Alert.Title>
               </Alert.Root>
             )}
-          </VStack>
-        </Stack>
-      </LoginContainer>
+
+            <VStack gap={6} align="center" w="full">
+              {loginMethod === 'twa' && (
+                <VStack gap={4} w="full">
+                  <Text fontSize="sm" color="gray.600" textAlign="center">
+                    You are using Telegram Web App
+                  </Text>
+                  <Button
+                    colorScheme="telegram"
+                    size="lg"
+                    w="full"
+                    rounded="xl"
+                    onClick={handleTelegramWebAppAuth}
+                    loading={state.isLoading}
+                    loadingText="Signing in..."
+                  >
+                    Sign in with Telegram
+                  </Button>
+                </VStack>
+              )}
+
+              {loginMethod === 'widget' && (
+                <VStack gap={4} w="full">
+                  <Text fontSize="sm" color="gray.600" textAlign="center">
+                    Click the button below to sign in with Telegram
+                  </Text>
+
+                  <Flex justify="center" align="center" w="full">
+                    <LoginButton
+                      botUsername="tsssss_test_bot"
+                      buttonSize="large"
+                      onAuthCallback={handleTelegramWidgetAuth}
+                    />
+                  </Flex>
+
+                  <Box
+                    fontSize="xs"
+                    color="gray.500"
+                    textAlign="center"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    gap={2}
+                  >
+                    <Text as="span">or</Text>
+                    <TelegramButton
+                      onClick={handleOpenTelegramApp}
+                      disabled={state.isLoading || isProcessingDeepLink}
+                      size="sm"
+                      py="2"
+                    >
+                      open in Telegram app
+                    </TelegramButton>
+                  </Box>
+                </VStack>
+              )}
+
+              {!loginMethod && (
+                <Alert.Root status="warning" rounded="xl">
+                  <Alert.Indicator />
+                  <Alert.Title>
+                    Unable to determine login method. Please check your
+                    configuration.
+                  </Alert.Title>
+                </Alert.Root>
+              )}
+            </VStack>
+          </Stack>
+        </LoginContainer>
+        <Box
+          bg="footer.bg"
+          color="footer.primaryText"
+          width="100%"
+          minWidth={isMobile ? '100%' : 'bgWidthMin'}
+          maxWidth={isMobile ? '100%' : 'bgWidthMax'}
+          rounded="3xl"
+          boxShadow={
+            isMobile
+              ? 'none'
+              : '0px 4px 8px 0px #18181B1A, 0px 0px 1px 0px #18181B4D'
+          }
+          mx="auto"
+        >
+          <Stack gap="5" p="4">
+            <VStack gap="4" align="flex-start" px="1">
+              <Icon as={ExgoIcon} color="button.primaryBg" />
+
+              <Text
+                textStyle="xs"
+                color="gray.300"
+                fontSize="sm"
+                fontWeight="medium"
+              >
+                {' '}
+                Надёжный сервис обмена валют и цифровых активов на Пхукете
+              </Text>
+            </VStack>
+          </Stack>
+        </Box>
+      </VStack>
     </Flex>
   );
 };
