@@ -1,9 +1,20 @@
 import { useState } from 'react';
-import { Button, HStack, Text, Box } from '@chakra-ui/react';
+import { Button, HStack, Text, Box, ButtonProps } from '@chakra-ui/react';
 import { useAuth } from '../hooks/use-auth';
 import { toaster } from './ui/toaster';
 
-export const LogoutButton = () => {
+type LogoutButtonProps = Partial<ButtonProps> & {
+  showUser?: boolean;
+  showAvatar?: boolean;
+  buttonText?: string;
+};
+
+export const LogoutButton = ({
+  showUser = true,
+  showAvatar = true,
+  buttonText = 'Logout',
+  ...buttonProps
+}: LogoutButtonProps) => {
   const { state, logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -36,36 +47,41 @@ export const LogoutButton = () => {
 
   return (
     <HStack gap={3}>
-      <HStack gap={2}>
-        <Box
-          w={8}
-          h={8}
-          bg="blue.500"
-          color="white"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          borderRadius="full"
-          fontSize="sm"
-          fontWeight="bold"
-        >
-          {state.user.firstName.charAt(0)}
-        </Box>
+      {showUser && (
+        <HStack gap={2}>
+          {showAvatar && (
+            <Box
+              w={8}
+              h={8}
+              bg="blue.500"
+              color="white"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              borderRadius="full"
+              fontSize="sm"
+              fontWeight="bold"
+            >
+              {state.user.firstName.charAt(0)}
+            </Box>
+          )}
 
-        <Text fontSize="sm" fontWeight="medium">
-          {state.user.firstName}
-        </Text>
-      </HStack>
+          <Text fontSize="sm" fontWeight="medium">
+            {state.user.firstName}
+          </Text>
+        </HStack>
+      )}
 
       <Button
         variant="ghost"
         size="sm"
         colorScheme="red"
+        {...buttonProps}
         onClick={handleLogout}
         loading={isLoggingOut}
         loadingText="Logging out..."
       >
-        Logout
+        {buttonText}
       </Button>
     </HStack>
   );

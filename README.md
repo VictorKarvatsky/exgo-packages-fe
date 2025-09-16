@@ -1,6 +1,7 @@
 # Инструкция: Подключение Telegram Auth библиотеки в новые проекты
 
 ## 1. Добавление Git Submodule
+
 1.1 В новом проекте добавляем submodule
 
 ```bash
@@ -9,14 +10,17 @@ cd path/to/your-new-project
 ```
 
 ### Добавляем submodule с библиотеками
+
 ```bash
 git submodule add -f -b main https://github.com/VictorKarvatsky/exgo-packages-fe.git libs/shared
 ```
 
 ### Инициализируем submodule
+
 git submodule update --init --recursive
 
 ### Коммитим изменения
+
 git add .gitmodules libs/shared
 
 git commit -m "Add shared libraries as submodule"
@@ -24,6 +28,7 @@ git commit -m "Add shared libraries as submodule"
 git push
 
 1.2 Проверяем что файлы скопировались
+
 ```bash
 ##Должны увидеть структуру библиотеки
 ls -la libs/shared/packages/telegram-auth/src/
@@ -45,11 +50,15 @@ export default defineConfig({
   resolve: {
     alias: {
       // ✅ Добавляем алиас для библиотеки авторизации
-      '@exgo/telegram-auth': path.resolve(__dirname, './libs/shared/packages/telegram-auth/src'),
+      '@exgo/telegram-auth': path.resolve(
+        __dirname,
+        './libs/shared/packages/telegram-auth/src'
+      ),
     },
   },
 });
 ```
+
 ## 3. Настройка TypeScript
 
 3.1 Обновляем tsconfig.json
@@ -60,7 +69,9 @@ export default defineConfig({
     "baseUrl": ".",
     "paths": {
       // ✅ Добавляем пути для TypeScript
-      "@exgo/telegram-auth": ["./libs/shared/packages/telegram-auth/src/index.ts"],
+      "@exgo/telegram-auth": [
+        "./libs/shared/packages/telegram-auth/src/index.ts"
+      ],
       "@exgo/telegram-auth/*": ["./libs/shared/packages/telegram-auth/src/*"]
     }
   }
@@ -81,6 +92,7 @@ export default defineConfig({
   }
 }
 ```
+
 ```
 bash
 ## Устанавливаем зависимости
@@ -118,6 +130,7 @@ export const Login = () => {
   return <LoginScreen />;
 };
 ```
+
 5.3 Защищаем приватные страницы
 
 ```typescript
@@ -152,6 +165,7 @@ export const Header = () => {
   );
 };
 ```
+
 5.5 Используем хук авторизации
 
 ```typescript
@@ -170,11 +184,11 @@ export const UserProfile = () => {
     <div>
       <h2>Профиль: {state.user?.firstName}</h2>
       <p>Username: @{state.user?.username}</p>
-      
+
       {hasRole('admin') && (
         <p>Роль: Администратор</p>
       )}
-      
+
       {hasPermission('users.edit') && (
         <button>Редактировать пользователей</button>
       )}
@@ -182,22 +196,28 @@ export const UserProfile = () => {
   );
 };
 ```
+
 ## 6. Настройка бэкенда
+
 6.1 Конфигурация API endpoints
 Библиотека ожидает следующие endpoints на бэкенде:
+
 ```
 POST /api/v1/auth/telegram/login     ##Telegram Widget авторизация
-POST /api/v1/auth/telegram/twa       ##Telegram Web App авторизация  
+POST /api/v1/auth/telegram/twa       ##Telegram Web App авторизация
 POST /api/v1/auth/telegram/deeplink  ##Deep Link авторизация
 POST /api/v1/auth/refresh            ##Обновление токенов
 POST /api/v1/auth/logout             ##Логаут
 ```
+
 6.2 Настройка переменных окружения
+
 ```
 ## .env
 VITE_API_BASE_URL=https://your-backend.com/api/v1
 VITE_TELEGRAM_BOT_USERNAME=your_bot_name
 ```
+
 ## 7. Команды для разработчиков
 
 7.1 Клонирование проекта новыми разработчиками
@@ -212,6 +232,7 @@ git submodule update
 ```
 
 7.2 Обновление библиотеки авторизации
+
 ```bash
 ## Обновляем библиотеку до последней версии
 cd libs/shared
@@ -223,6 +244,7 @@ git add libs/shared
 git commit -m "Update telegram-auth library"
 git push
 ```
+
 7.3 Разработка фич в библиотеке
 
 ```bash
@@ -239,37 +261,40 @@ git push origin feature/new-auth-feature
 ```
 
 ## Создаем PR в основном репозитории библиотеки
+
 ## 8. Полезные импорты
+
 ```typescript
 // Все доступные импорты из библиотеки
-import { 
+import {
   // Компоненты
   AuthProvider,
-  LoginScreen, 
+  LoginScreen,
   LogoutButton,
   withAuthGuard,
-  
+
   // Хуки
   useAuth,
-  
+
   // API
   authApi,
-  
+
   // Утилиты
   tokenStorage,
   twaClient,
-  
+
   // UI
-  toaster
+  toaster,
 } from '@exgo/telegram-auth';
 
 // Типы
-import type { 
-  User, 
-  AuthState, 
-  TelegramLoginWidgetData 
+import type {
+  User,
+  AuthState,
+  TelegramLoginWidgetData,
 } from '@exgo/telegram-auth';
 ```
+
 ## 9. Типичные проблемы и решения
 
 9.1 Ошибка "Failed to resolve import"
@@ -287,6 +312,7 @@ import type {
 ```bash
 git submodule update --init --recursive
 ```
+
 9.3 TypeScript ошибки
 
 Проблема: TS не видит типы библиотеки

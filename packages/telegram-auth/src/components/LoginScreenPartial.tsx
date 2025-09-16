@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, FC } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -18,44 +18,9 @@ import type {
   TelegramDeepLinkUserData,
 } from '../types';
 import { toaster } from './ui/toaster';
-import { LoginContainer } from './ui/LoginContainer';
 
-type LoginScreenProps = {
-  texts?: {
-    title?: string;
-    subtitle?: string;
-    instruction?: string;
-    botDomainError?: string;
-    openInApp?: string;
-    or?: string;
-  };
-};
-
-const defaultTexts = {
-  title: 'Authorization',
-  subtitle: 'Sign in via Telegram',
-  instruction: 'Click the button below to sign in with Telegram',
-  botDomainError: 'Bot domain invalid',
-  openInApp: 'open in Telegram app',
-  or: 'or',
-};
-
-const pillButtonStyles = {
-  bg: 'brand.100',
-  color: 'black',
-  size: 'sm' as const,
-  px: 6,
-  borderRadius: '22px',
-  border: '1px solid',
-  borderColor: 'brand.200',
-  _hover: { transform: 'scale(1.05)' },
-  _active: { transform: 'scale(0.98)' },
-  transition: 'all 0.2s ease',
-};
-
-export const LoginScreen: FC<LoginScreenProps> = ({ texts = {} }) => {
+export const LoginScreenPartial = () => {
   const { state, login } = useAuth();
-  const t = { ...defaultTexts, ...texts };
   const [loginMethod, setLoginMethod] = useState<'twa' | 'widget' | null>(null);
   const [isProcessingDeepLink, setIsProcessingDeepLink] = useState(false);
 
@@ -209,10 +174,16 @@ export const LoginScreen: FC<LoginScreenProps> = ({ texts = {} }) => {
 
   if (state.isLoading || isProcessingDeepLink) {
     return (
-      <Flex minH="100vh" align="center" justify="center" bg="app.bg">
+      <Flex
+        minH="100vh"
+        align="center"
+        justify="center"
+        bg="gray.50"
+        _dark={{ bg: 'gray.900' }}
+      >
         <VStack gap={4}>
-          <Spinner size="xl" color="brand.500" />
-          <Text color="card.fg">
+          <Spinner size="xl" color="blue.500" />
+          <Text>
             {isProcessingDeepLink
               ? 'Processing Telegram authorization...'
               : 'Authenticating...'}
@@ -223,111 +194,121 @@ export const LoginScreen: FC<LoginScreenProps> = ({ texts = {} }) => {
   }
 
   return (
-    <Flex minH="100vh" align="center" justify="center" bg="app.bg" p={4}>
-      <LoginContainer>
-        <Stack gap="5" p="4">
-          <VStack gap={4} textAlign="center">
-            <Heading
-              size={{ base: 'xl', md: '2xl' }}
-              color="gray.700"
-              _dark={{ color: 'gray.200' }}
-            >
-              {t.title}
-            </Heading>
-            <Text
-              color="gray.500"
-              _dark={{ color: 'gray.400' }}
-              fontSize={{ base: 'md', md: 'lg' }}
-            >
-              Войдите через Telegram
-            </Text>
-          </VStack>
+    <Box
+      id="auth"
+      bg="white"
+      rounded="3xl"
+      width="100%"
+      minWidth="bgWidthMin"
+      maxWidth="bgWidthMax"
+      boxShadow="0px 4px 8px 0px #18181B1A, 0px 0px 1px 0px #18181B4D"
+    >
+      <Stack gap="5" p="4">
+        <VStack gap={4} textAlign="center">
+          <Heading
+            size={{ base: 'xl', md: '2xl' }}
+            color="gray.700"
+            _dark={{ color: 'gray.200' }}
+          >
+            Авторизация
+          </Heading>
+          <Text
+            color="gray.500"
+            _dark={{ color: 'gray.400' }}
+            fontSize={{ base: 'md', md: 'lg' }}
+          >
+            Войдите через Telegram
+          </Text>
+        </VStack>
 
-          {state.error && (
-            <Alert.Root status="error" rounded="xl">
-              <Alert.Indicator />
-              <Alert.Title>{state.error}</Alert.Title>
-            </Alert.Root>
+        {state.error && (
+          <Alert.Root status="error" rounded="xl">
+            <Alert.Indicator />
+            <Alert.Title>{state.error}</Alert.Title>
+          </Alert.Root>
+        )}
+
+        <VStack gap={6} align="center" maxW="400px" mx="auto" w="full">
+          {loginMethod === 'twa' && (
+            <VStack gap={4} w="full">
+              <Text
+                fontSize="sm"
+                color="gray.600"
+                _dark={{ color: 'gray.400' }}
+                textAlign="center"
+              >
+                You are using Telegram Web App
+              </Text>
+              <Button
+                colorScheme="telegram"
+                size="lg"
+                w="full"
+                rounded="xl"
+                onClick={handleTelegramWebAppAuth}
+                loading={state.isLoading}
+                loadingText="Signing in..."
+              >
+                Sign in with Telegram
+              </Button>
+            </VStack>
           )}
 
-          <VStack gap={6} align="center" maxW="400px" mx="auto" w="full">
-            {loginMethod === 'twa' && (
-              <VStack gap={4} w="full">
-                <Text
-                  fontSize="sm"
-                  color="gray.600"
-                  _dark={{ color: 'gray.400' }}
-                  textAlign="center"
-                >
-                  You are using Telegram Web App
-                </Text>
+          {loginMethod === 'widget' && (
+            <VStack gap={4} w="full">
+              <Text
+                fontSize="sm"
+                color="gray.600"
+                _dark={{ color: 'gray.400' }}
+                textAlign="center"
+              >
+                Click the button below to sign in with Telegram
+              </Text>
+
+              <Flex justify="center" align="center" w="full">
+                <LoginButton
+                  botUsername="tsssss_test_bot"
+                  buttonSize="large"
+                  onAuthCallback={handleTelegramWidgetAuth}
+                />
+              </Flex>
+
+              <Box
+                fontSize="xs"
+                color="gray.500"
+                _dark={{ color: 'gray.500' }}
+                textAlign="center"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                gap={2}
+              >
+                <Text as="span">or</Text>
                 <Button
-                  colorScheme="telegram"
-                  size="lg"
-                  w="full"
-                  rounded="xl"
-                  onClick={handleTelegramWebAppAuth}
-                  loading={state.isLoading}
-                  loadingText="Signing in..."
+                  variant="outline"
+                  size="xs"
+                  colorScheme="blue"
+                  borderWidth="1px"
+                  rounded="lg"
+                  onClick={handleOpenTelegramApp}
+                  disabled={state.isLoading || isProcessingDeepLink}
                 >
-                  Sign in with Telegram
+                  open in Telegram app
                 </Button>
-              </VStack>
-            )}
+              </Box>
+            </VStack>
+          )}
 
-            {loginMethod === 'widget' && (
-              <VStack gap={4} w="full">
-                <Text
-                  fontSize="sm"
-                  color="gray.600"
-                  _dark={{ color: 'gray.400' }}
-                  textAlign="center"
-                >
-                  Click the button below to sign in with Telegram
-                </Text>
-
-                <Flex justify="center" align="center" w="full">
-                  <LoginButton
-                    botUsername="tsssss_test_bot"
-                    buttonSize="large"
-                    onAuthCallback={handleTelegramWidgetAuth}
-                  />
-                </Flex>
-
-                <Box
-                  fontSize="xs"
-                  color="gray.500"
-                  _dark={{ color: 'gray.500' }}
-                  textAlign="center"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  gap={2}
-                >
-                  <Text as="span">or</Text>
-                  <Button
-                    {...pillButtonStyles}
-                    onClick={handleOpenTelegramApp}
-                    disabled={state.isLoading || isProcessingDeepLink}
-                  >
-                    open in Telegram app
-                  </Button>
-                </Box>
-              </VStack>
-            )}
-
-            {!loginMethod && (
-              <Alert.Root status="warning" rounded="xl">
-                <Alert.Indicator />
-                <Alert.Title>
-                  Unable to determine login method. Please check your
-                  configuration.
-                </Alert.Title>
-              </Alert.Root>
-            )}
-          </VStack>
-        </Stack>
-      </LoginContainer>
-    </Flex>
+          {!loginMethod && (
+            <Alert.Root status="warning" rounded="xl">
+              <Alert.Indicator />
+              <Alert.Title>
+                Unable to determine login method. Please check your
+                configuration.
+              </Alert.Title>
+            </Alert.Root>
+          )}
+        </VStack>
+      </Stack>
+    </Box>
   );
 };
