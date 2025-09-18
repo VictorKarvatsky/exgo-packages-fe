@@ -1,0 +1,21 @@
+{
+  "name": "@exgo/i18n",
+  "version": "1.0.0",
+  "description": "Internationalization library for ExGo applications",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "typescript": "^5"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  }
+}
