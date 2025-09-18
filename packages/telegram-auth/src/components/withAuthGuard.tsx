@@ -1,7 +1,7 @@
 import { useEffect, type ComponentType } from 'react';
 import { Box, Spinner, Flex } from '@chakra-ui/react';
 import { useAuth } from '../hooks/use-auth';
-import { LoginScreen } from './LoginScreen';
+import { LoginScreen } from './LoginScreen/LoginScreen';
 
 export function withAuthGuard<TProps extends Record<string, unknown>>(
   WrappedComponent: ComponentType<TProps>,

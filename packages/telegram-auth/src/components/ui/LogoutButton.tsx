@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, HStack, Text, Box, ButtonProps } from '@chakra-ui/react';
-import { useAuth } from '../hooks/use-auth';
-import { toaster } from './ui/toaster';
+import { useAuth } from '../../hooks/use-auth';
+import { toaster } from './toaster';
 
 type LogoutButtonProps = Partial<ButtonProps> & {
   showUser?: boolean;

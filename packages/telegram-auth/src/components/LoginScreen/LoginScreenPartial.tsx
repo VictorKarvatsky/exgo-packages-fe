@@ -11,13 +11,13 @@ import {
   Stack,
 } from '@chakra-ui/react';
 import { LoginButton } from '@telegram-auth/react';
-import { useAuth } from '../hooks/use-auth';
-import { twaClient } from '../telegram/twa-client';
+import { useAuth } from '../../hooks/use-auth';
+import { twaClient } from '../../telegram/twa-client';
 import type {
   TelegramLoginWidgetData,
   TelegramDeepLinkUserData,
-} from '../types';
-import { toaster } from './ui/toaster';
+} from '../../types';
+import { toaster } from '../ui/toaster';
 
 export const LoginScreenPartial = () => {
   const { state, login } = useAuth();

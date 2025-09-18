@@ -1,6 +1,6 @@
 export { AuthProvider } from './components/AuthProvider';
-export { LoginScreen } from './components/LoginScreen';
-export { LogoutButton } from './components/LogoutButton';
+export { LoginScreen } from './components/LoginScreen/LoginScreen';
+export { LogoutButton } from './components/ui/LogoutButton';
 export { withAuthGuard } from './components/withAuthGuard';
 export { toaster, Toaster } from './components/ui/toaster';
 
