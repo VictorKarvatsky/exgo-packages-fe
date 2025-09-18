@@ -6,7 +6,7 @@ import { MobileLoginScreen } from './MobileLoginScreen';
 
 export const LoginScreen: FC = () => {
   const isMobile = useBreakpointValue({ base: true, md: false });
-  
+
   return (
     <LanguageProvider initialLanguage="ru">
       {isMobile ? <MobileLoginScreen /> : <DesktopLoginScreen />}

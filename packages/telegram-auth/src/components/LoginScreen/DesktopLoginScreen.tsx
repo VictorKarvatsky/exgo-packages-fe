@@ -27,7 +27,7 @@ export const DesktopLoginScreen: FC = () => {
   const t = useTranslate(authLocales);
   const [loginMethod, setLoginMethod] = useState<'twa' | 'widget' | null>(null);
   const [isProcessingDeepLink, setIsProcessingDeepLink] = useState(false);
-  
+
   const {
     handleTelegramDeepLinkAuth,
     handleTelegramWidgetAuth,

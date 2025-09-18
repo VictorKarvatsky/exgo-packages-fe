@@ -24,7 +24,7 @@ export const MobileLoginScreen: FC = () => {
   const t = useTranslate(authLocales);
   const [loginMethod, setLoginMethod] = useState<'twa' | 'widget' | null>(null);
   const [isProcessingDeepLink, setIsProcessingDeepLink] = useState(false);
-  
+
   const {
     handleTelegramDeepLinkAuth,
     handleTelegramWidgetAuth,
@@ -96,17 +96,20 @@ export const MobileLoginScreen: FC = () => {
   }
 
   return (
-    <Flex 
-      minH="auto" 
-      align="center" 
-      justify="center" 
-      bg="app.bg" 
-      p={2}  // Минимальные отступы
+    <Flex
+      minH="auto"
+      align="center"
+      justify="center"
+      bg="app.bg"
+      p={2} // Минимальные отступы
     >
-      <Box w="full" maxW="380px"> {/* Уменьшили максимальную ширину */}
+      <Box w="full" maxW="380px">
+        {' '}
+        {/* Уменьшили максимальную ширину */}
         <LoginContainer>
-          <VStack gap="3" px="4" py="5"> {/* Компактные отступы */}
-            
+          <VStack gap="3" px="4" py="5">
+            {' '}
+            {/* Компактные отступы */}
             <VStack gap="2" textAlign="center">
               <Heading size="lg" lineHeight="1.3">
                 {t('auth.title')}
@@ -116,14 +119,12 @@ export const MobileLoginScreen: FC = () => {
                 {t('auth.subtitle')}
               </Text>
             </VStack>
-
             {state.error && (
               <Alert.Root status="error" rounded="xl" size="sm">
                 <Alert.Indicator />
                 <Alert.Title fontSize="sm">{state.error}</Alert.Title>
               </Alert.Root>
             )}
-
             <VStack gap="3" w="full">
               {loginMethod === 'twa' && (
                 <VStack gap="3" w="full">
@@ -159,10 +160,10 @@ export const MobileLoginScreen: FC = () => {
                   </Flex>
 
                   {/* Компактная строка с кнопкой */}
-                  <Flex 
-                    fontSize="xs" 
-                    color="gray.500" 
-                    align="center" 
+                  <Flex
+                    fontSize="xs"
+                    color="gray.500"
+                    align="center"
                     justify="center"
                     gap="1"
                     wrap="wrap" // Переносим если не помещается
@@ -172,10 +173,10 @@ export const MobileLoginScreen: FC = () => {
                       onClick={handleOpenTelegramApp}
                       disabled={state.isLoading || isProcessingDeepLink}
                       size="xs"
-                      h="20px"           // Фиксированная маленькая высота
-                      px="2"             // Боковые отступы
-                      fontSize="xs"      // Мелкий шрифт
-                    //   borderRadius="md"  // Обычный радиус
+                      h="20px" // Фиксированная маленькая высота
+                      px="2" // Боковые отступы
+                      fontSize="xs" // Мелкий шрифт
+                      //   borderRadius="md"  // Обычный радиус
                     >
                       {t('auth.openInApp')}
                     </TelegramButton>

@@ -2,13 +2,19 @@ import { useCallback } from 'react';
 import { useAuth } from '../hooks/use-auth';
 import { twaClient } from '../telegram/twa-client';
 import { toaster } from '../components/ui/toaster';
-import type { TelegramLoginWidgetData, TelegramDeepLinkUserData } from '../types';
+import type {
+  TelegramLoginWidgetData,
+  TelegramDeepLinkUserData,
+} from '../types';
 
 export const useAuthHandlers = (t: (key: string) => string) => {
   const { login } = useAuth();
 
   const handleTelegramDeepLinkAuth = useCallback(
-    async (authKey: string, userData: TelegramDeepLinkUserData): Promise<void> => {
+    async (
+      authKey: string,
+      userData: TelegramDeepLinkUserData
+    ): Promise<void> => {
       const baseData: TelegramLoginWidgetData = {
         id: userData.id,
         first_name: userData.first_name,
