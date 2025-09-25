@@ -13,7 +13,7 @@ export class AuthApi {
   static async loginViaTelegramWebApp(
     request: TelegramWebAppLoginRequest
   ): Promise<AuthResponse> {
-    return apiRequest<AuthResponse>('/api/v1/auth/telegram/webapp', {
+    return apiRequest<AuthResponse>('/api/auth/telegram/webapp', {
       method: 'POST',
       headers: {
         Authorization: `tma ${request?.initDataRaw}`,
@@ -26,7 +26,7 @@ export class AuthApi {
   static async loginViaTelegramWidget(
     request: TelegramWidgetLoginRequest
   ): Promise<AuthResponse> {
-    return apiRequest<AuthResponse>('/api/v1/auth/telegram/login', {
+    return apiRequest<AuthResponse>('/api/auth/telegram/login', {
       method: 'POST',
       body: JSON.stringify(request),
     });
@@ -38,7 +38,7 @@ export class AuthApi {
       throw new AuthApiError('No refresh token available', 401);
     }
 
-    return apiRequest<AuthTokens>('/api/v1/auth/telegram/refresh', {
+    return apiRequest<AuthTokens>('/api/auth/telegram/refresh', {
       method: 'POST',
       body: JSON.stringify({ refreshToken }),
     });
@@ -61,7 +61,7 @@ export class AuthApi {
     const refreshToken = tokenStorage.getRefreshToken();
     if (!refreshToken) return;
 
-    await apiRequest<void>('/api/v1/auth/telegram/logout', {
+    await apiRequest<void>('/api/auth/telegram/logout', {
       method: 'POST',
       body: null,
     }).catch(() => {});

@@ -146,7 +146,7 @@ export const DesktopLoginScreen: FC = () => {
 
                   <Flex justify="center" align="center" w="full">
                     <LoginButton
-                      botUsername="tsssss_test_bot"
+                      botUsername={`${import.meta.env.VITE_TELEGRAM_BOT_NAME}`}
                       buttonSize="large"
                       onAuthCallback={handleTelegramWidgetAuth}
                     />

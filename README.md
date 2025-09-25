@@ -203,18 +203,18 @@ export const UserProfile = () => {
 Библиотека ожидает следующие endpoints на бэкенде:
 
 ```
-POST /api/v1/auth/telegram/login     ##Telegram Widget авторизация
-POST /api/v1/auth/telegram/twa       ##Telegram Web App авторизация
-POST /api/v1/auth/telegram/deeplink  ##Deep Link авторизация
-POST /api/v1/auth/refresh            ##Обновление токенов
-POST /api/v1/auth/logout             ##Логаут
+POST /api/auth/telegram/login     ##Telegram Widget авторизация
+POST /api/auth/telegram/twa       ##Telegram Web App авторизация
+POST /api/auth/telegram/deeplink  ##Deep Link авторизация
+POST /api/auth/refresh            ##Обновление токенов
+POST /api/auth/logout             ##Логаут
 ```
 
 6.2 Настройка переменных окружения
 
 ```
 ## .env
-VITE_API_BASE_URL=https://your-backend.com/api/v1
+VITE_API_BASE_URL=https://your-backend.com/api
 VITE_TELEGRAM_BOT_USERNAME=your_bot_name
 ```
 

@@ -97,7 +97,9 @@ export const useAuthHandlers = (t: (key: string) => string) => {
   const handleOpenTelegramApp = useCallback(() => {
     const authKey = crypto.randomUUID();
     sessionStorage.setItem('telegram_auth_key', authKey);
-    const deepLink = `https://t.me/tsssss_test_bot?start=auth_${authKey}`;
+    // const deepLink = `https://t.me/tsssss_test_bot?start=auth_${authKey}`;
+    // const deepLink = `https://t.me/${import.meta.env.VITE_TELEGRAM_BOT_NAME}?start`;
+    const deepLink = `https://t.me/tsssss_test_bot?/startapp`;
     window.open(deepLink, '_blank');
 
     toaster.create({
