@@ -9,6 +9,8 @@
 cd path/to/your-new-project
 ```
 
+если существует папка libs/shared/ ее необходимо удалить!!!
+
 ### Добавляем submodule с библиотеками
 
 ```bash
