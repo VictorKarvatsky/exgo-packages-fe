@@ -153,7 +153,7 @@ export const MobileLoginScreen: FC = () => {
 
                   <Flex justify="center" align="center" w="full">
                     <LoginButton
-                      botUsername={`${import.meta.env.VITE_TELEGRAM_BOT_NAME}`}                      
+                      botUsername={`${import.meta.env.VITE_TELEGRAM_BOT_NAME}`}
                       buttonSize="medium"
                       onAuthCallback={handleTelegramWidgetAuth}
                     />
