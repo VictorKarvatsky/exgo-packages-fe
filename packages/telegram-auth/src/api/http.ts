@@ -1,4 +1,5 @@
 import { AuthApiError } from './errors';
+import { twaClient } from '../telegram/twa-client';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -39,9 +40,13 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
+  // Determine client-type based on whether user is in Telegram Web App
+  const clientType = twaClient.isAvailable() ? 'WEB-APP' : 'WEB';
+
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
+      'client-type': clientType,
       ...(options.headers ?? {}),
     },
     ...options,
