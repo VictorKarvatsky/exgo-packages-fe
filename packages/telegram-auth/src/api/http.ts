@@ -44,12 +44,12 @@ export async function apiRequest<T>(
   const clientType = twaClient.isAvailable() ? 'WEB-APP' : 'WEB';
 
   const response = await fetch(url, {
+    ...options,
     headers: {
       'Content-Type': 'application/json',
       'client-type': clientType,
       ...(options.headers ?? {}),
     },
-    ...options,
   });
 
   if (!response.ok) {
