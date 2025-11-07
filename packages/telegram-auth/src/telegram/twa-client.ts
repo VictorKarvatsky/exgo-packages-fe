@@ -9,8 +9,13 @@ export class TelegramWebAppClient {
 
   private init(): void {
     if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-      this.webApp = window.Telegram.WebApp;
-      this.webApp.ready();
+      const webApp = window.Telegram.WebApp as TelegramWebApp;
+      this.webApp = webApp;
+      webApp.ready();
+      // Request fullscreen mode by default (Bot API 8.0+)
+      if (webApp.requestFullscreen) {
+        webApp.requestFullscreen();
+      }
     }
   }
 
@@ -60,6 +65,18 @@ export class TelegramWebAppClient {
     this.webApp?.close();
   }
 
+  requestFullscreen(): void {
+    this.webApp?.requestFullscreen();
+  }
+
+  exitFullscreen(): void {
+    this.webApp?.exitFullscreen();
+  }
+
+  isFullscreen(): boolean {
+    return this.webApp?.isFullscreen ?? false;
+  }
+
   showAlert(message: string): Promise<void> | void {
     return this.webApp?.showAlert(message);
   }
@@ -105,6 +122,7 @@ export class TelegramWebAppClient {
       initData: this.getInitData(),
       initDataUnsafe: this.getInitDataUnsafe(),
       isExpanded: this.webApp.isExpanded,
+      isFullscreen: this.webApp.isFullscreen,
       themeParams: this.webApp.themeParams,
       viewportHeight: this.webApp.viewportHeight,
       viewportStableHeight: this.webApp.viewportStableHeight,

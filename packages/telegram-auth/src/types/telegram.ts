@@ -59,6 +59,7 @@ export type TelegramWebApp = {
   colorScheme: 'light' | 'dark';
   themeParams: Record<string, string>;
   isExpanded: boolean;
+  isFullscreen: boolean;
   viewportHeight: number;
   viewportStableHeight: number;
   headerColor: string;
@@ -68,6 +69,8 @@ export type TelegramWebApp = {
   ready: () => void;
   expand: () => void;
   close: () => void;
+  requestFullscreen: () => void;
+  exitFullscreen: () => void;
   MainButton: {
     text: string;
     color: string;
