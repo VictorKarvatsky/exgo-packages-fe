@@ -12,8 +12,10 @@ export class TelegramWebAppClient {
       const webApp = window.Telegram.WebApp as TelegramWebApp;
       this.webApp = webApp;
       webApp.ready();
-      // Request fullscreen mode by default (Bot API 8.0+)
-      if (webApp.requestFullscreen) {
+
+      // Request fullscreen mode only when running inside Telegram Web App (Bot API 8.0+)
+      // Check initData to ensure we're in a real TWA environment, not a regular browser
+      if (webApp.initData && webApp.requestFullscreen) {
         webApp.requestFullscreen();
       }
     }

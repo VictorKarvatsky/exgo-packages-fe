@@ -112,11 +112,3 @@ export type TelegramWebApp = {
   showAlert: (message: string) => Promise<void>;
   showConfirm: (message: string) => Promise<boolean>;
 };
-
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp: TelegramWebApp;
-    };
-  }
-}
