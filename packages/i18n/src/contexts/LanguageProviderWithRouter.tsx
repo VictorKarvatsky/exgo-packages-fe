@@ -36,11 +36,13 @@ export const LanguageProviderWithRouter: FC<PropsWithChildren> = ({
   useEffect(() => {
     const langParam = searchParams.get("lang");
 
-    // Если параметра нет в URL, добавляем его
+    // Если параметра нет в URL, добавляем его (сохраняя остальные параметры)
     if (!langParam) {
       const initialLang = getBrowserLanguage();
       setLanguageState(initialLang);
-      setSearchParams({ lang: initialLang }, { replace: true });
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set("lang", initialLang);
+      setSearchParams(newParams, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Выполняется только при монтировании
@@ -48,7 +50,9 @@ export const LanguageProviderWithRouter: FC<PropsWithChildren> = ({
   // Функция для изменения языка
   const setLanguage = (newLang: Language) => {
     setLanguageState(newLang);
-    setSearchParams({ lang: newLang });
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set("lang", newLang);
+    setSearchParams(newParams);
   };
 
   // Обновляем язык при изменении URL (например, при навигации назад/вперед)
