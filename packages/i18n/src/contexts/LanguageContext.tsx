@@ -1,10 +1,10 @@
-import { createContext, FC, PropsWithChildren, useMemo, useState } from 'react';
-import type { Language, LanguageContextType } from '../types';
+import { createContext, FC, PropsWithChildren, useMemo, useState } from "react";
+import type { Language, LanguageContextType } from "../types";
 
 const defaultContext: LanguageContextType = {
-  language: 'ru',
+  language: "en",
   setLanguage: () => {
-    throw new Error('setLanguage must be used within LanguageProvider');
+    throw new Error("setLanguage must be used within LanguageProvider");
   },
 };
 
@@ -19,7 +19,7 @@ type LanguageProviderProps = PropsWithChildren<{
 
 export const LanguageProvider: FC<LanguageProviderProps> = ({
   children,
-  initialLanguage = 'ru',
+  initialLanguage = "en",
   language: externalLanguage,
   setLanguage: externalSetLanguage,
 }) => {
