@@ -55,6 +55,9 @@ export type TelegramWidgetLoginRequest = {
   photo_url?: string;
   auth_date: number;
   hash: string;
+  // Referral tracking
+  ref?: string;
+  source?: string;
 };
 
 export type AuthError = {
