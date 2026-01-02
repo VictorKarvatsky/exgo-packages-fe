@@ -13,9 +13,16 @@ export class TelegramWebAppClient {
       this.webApp = webApp;
       webApp.ready();
 
-      // Request fullscreen mode only when running inside Telegram Web App (Bot API 8.0+)
-      // Check initData to ensure we're in a real TWA environment, not a regular browser
-      if (webApp.initData && webApp.requestFullscreen) {
+      // Request fullscreen mode only on mobile platforms (Bot API 8.0+)
+      // Skip for desktop (tdesktop, macos, web) - can cause rendering issues
+      const platform = webApp.platform?.toLowerCase() || '';
+      const isDesktop =
+        platform === 'tdesktop' ||
+        platform === 'macos' ||
+        platform === 'web' ||
+        platform === 'unknown';
+
+      if (webApp.initData && webApp.requestFullscreen && !isDesktop) {
         webApp.requestFullscreen();
       }
     }
