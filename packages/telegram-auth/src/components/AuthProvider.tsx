@@ -10,6 +10,7 @@ import type { AuthState, AuthContextValue, User } from '../types';
 import { authApi } from '../api';
 import { tokenStorage } from '../storage';
 import { twaClient } from '../telegram';
+import { resolveTelegramBotId } from '../utils/resolve-telegram-bot-id';
 
 type AuthAction =
   | { type: 'SET_LOADING'; payload: boolean }
@@ -44,12 +45,65 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
+/** Auth API functions that can be injected (e.g., GraphQL-based) */
+export interface AuthApiFunctions {
+  authenticateWithWidget: (input: {
+    id: number;
+    firstName?: string;
+    lastName?: string;
+    username?: string;
+    photoUrl?: string;
+    authDate: number;
+    hash: string;
+    ref?: string;
+    source?: string;
+  }) => Promise<{ accessToken: string; refreshToken: string }>;
+
+  authenticateWithMiniApp: (input: {
+    initDataRaw: string;
+    ref?: string;
+    source?: string;
+  }) => Promise<{ accessToken: string; refreshToken: string }>;
+
+  refreshTokens: (
+    refreshToken: string
+  ) => Promise<{ accessToken: string; refreshToken: string }>;
+}
+
 type AuthProviderProps = {
   children: ReactNode;
+  /** Bot ID for authentication. If not provided, will try to resolve from env or query params. */
+  botId?: string;
+  /** Function to get botId dynamically (e.g., from clientConfig) */
+  getBotId?: () => string | null;
+  /** Custom auth API functions (e.g., GraphQL-based). If not provided, uses REST API. */
+  authApi?: AuthApiFunctions;
 };
 
-export const AuthProvider = ({ children }: AuthProviderProps) => {
+export const AuthProvider = ({
+  children,
+  botId: propBotId,
+  getBotId,
+  authApi: customAuthApi,
+}: AuthProviderProps) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
+
+  // Resolve botId from props, getter function, or env
+  // Returns null if not available (auth will be disabled)
+  const resolveBotId = useCallback((): string | null => {
+    // 1. From props
+    if (propBotId) return propBotId;
+    // 2. From getter function (e.g., clientConfig)
+    if (getBotId) {
+      const fromGetter = getBotId();
+      if (fromGetter) return fromGetter;
+    }
+    // 3. From env or query params
+    const fromEnv = resolveTelegramBotId();
+    if (fromEnv) return fromEnv;
+
+    return null;
+  }, [propBotId, getBotId]);
 
   const login = useCallback(
     async (method: 'twa' | 'widget', data: unknown): Promise<void> => {
@@ -60,13 +114,35 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         let response;
 
         if (method === 'twa') {
-          const initData = twaClient.getInitData();
+          const twaData = data as
+            | { initDataRaw?: string; ref?: string; source?: string }
+            | undefined;
+          const initData = twaData?.initDataRaw || twaClient.getInitData();
           if (!initData) {
             throw new Error('No TWA initData available');
           }
-          response = await authApi.loginViaTelegramWebApp({
-            initDataRaw: initData,
-          });
+
+          // Use custom GraphQL API if provided, otherwise fall back to REST
+          if (customAuthApi) {
+            response = await customAuthApi.authenticateWithMiniApp({
+              initDataRaw: initData,
+              ref: twaData?.ref,
+              source: twaData?.source,
+            });
+          } else {
+            const botId = resolveBotId();
+            if (!botId) {
+              throw new Error(
+                'Authentication not available: bot configuration missing'
+              );
+            }
+            response = await authApi.loginViaTelegramWebApp({
+              botId,
+              initDataRaw: initData,
+              ref: twaData?.ref,
+              source: twaData?.source,
+            });
+          }
 
           // Для TWA создаем пользователя из initDataUnsafe
           const initDataUnsafe = twaClient.getInitDataUnsafe();
@@ -86,10 +162,43 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             dispatch({ type: 'SET_USER', payload: user });
           }
         } else {
-          const widgetData = data as Parameters<
-            typeof authApi.loginViaTelegramWidget
-          >[0];
-          response = await authApi.loginViaTelegramWidget(widgetData);
+          const widgetData = data as {
+            id: number;
+            first_name: string;
+            last_name?: string;
+            username?: string;
+            photo_url?: string;
+            auth_date: number;
+            hash: string;
+            ref?: string;
+            source?: string;
+          };
+
+          // Use custom GraphQL API if provided, otherwise fall back to REST
+          if (customAuthApi) {
+            response = await customAuthApi.authenticateWithWidget({
+              id: widgetData.id,
+              firstName: widgetData.first_name,
+              lastName: widgetData.last_name,
+              username: widgetData.username,
+              photoUrl: widgetData.photo_url,
+              authDate: widgetData.auth_date,
+              hash: widgetData.hash,
+              ref: widgetData.ref,
+              source: widgetData.source,
+            });
+          } else {
+            const botId = resolveBotId();
+            if (!botId) {
+              throw new Error(
+                'Authentication not available: bot configuration missing'
+              );
+            }
+            response = await authApi.loginViaTelegramWidget({
+              botId,
+              ...widgetData,
+            });
+          }
 
           const user: User = {
             id: widgetData.id,
@@ -123,12 +232,33 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         dispatch({ type: 'SET_LOADING', payload: false });
       }
     },
-    []
+    [resolveBotId, customAuthApi]
   );
+
+  // Helper to refresh tokens using custom or default API
+  const doRefreshTokens = useCallback(async () => {
+    const refreshToken = tokenStorage.getRefreshToken();
+    if (!refreshToken) {
+      throw new Error('No refresh token available');
+    }
+
+    if (customAuthApi) {
+      return customAuthApi.refreshTokens(refreshToken);
+    }
+    return authApi.refreshTokens();
+  }, [customAuthApi]);
 
   // Основная инициализация аутентификации
   useEffect(() => {
     const initAuth = async () => {
+      // Check if auth API is available (either custom or botId for REST)
+      const hasAuthApi = customAuthApi || resolveBotId();
+      if (!hasAuthApi) {
+        // No auth configuration - skip auto-auth but don't show error
+        dispatch({ type: 'SET_LOADING', payload: false });
+        return;
+      }
+
       // Проверяем TWA в первую очередь для бесшовной авторизации
       if (twaClient.isAvailable()) {
         // console.log('TWA detected, attempting auto-authentication');
@@ -159,7 +289,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       dispatch({ type: 'SET_LOADING', payload: true });
       try {
-        const tokens = await authApi.refreshTokens();
+        const tokens = await doRefreshTokens();
         tokenStorage.setTokens(tokens);
         const userData = tokenStorage.getUserData();
         dispatch({ type: 'SET_USER', payload: userData });
@@ -176,7 +306,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
 
     initAuth();
-  }, [login]);
+  }, [login, doRefreshTokens, customAuthApi, resolveBotId]);
 
   const logout = useCallback(async (): Promise<void> => {
     dispatch({ type: 'SET_LOADING', payload: true });
@@ -195,14 +325,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const refresh = useCallback(async (): Promise<void> => {
     try {
-      const tokens = await authApi.refreshTokens();
+      const tokens = await doRefreshTokens();
       tokenStorage.setTokens(tokens);
     } catch (error) {
       tokenStorage.clearTokens();
       dispatch({ type: 'RESET' });
       throw error;
     }
-  }, []);
+  }, [doRefreshTokens]);
 
   const getAccessToken = useCallback((): string | null => {
     return tokenStorage.getAccessToken();

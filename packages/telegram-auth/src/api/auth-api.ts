@@ -19,7 +19,12 @@ export class AuthApi {
         Authorization: `tma ${request?.initDataRaw}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(request),
+      body: JSON.stringify({
+        botId: request.botId,
+        initDataRaw: request.initDataRaw,
+        ref: request.ref,
+        source: request.source,
+      }),
     });
   }
 
@@ -28,7 +33,18 @@ export class AuthApi {
   ): Promise<AuthResponse> {
     return apiRequest<AuthResponse>('/api/auth/telegram/login', {
       method: 'POST',
-      body: JSON.stringify(request),
+      body: JSON.stringify({
+        botId: request.botId,
+        id: request.id,
+        first_name: request.first_name,
+        last_name: request.last_name,
+        username: request.username,
+        photo_url: request.photo_url,
+        auth_date: request.auth_date,
+        hash: request.hash,
+        ref: request.ref,
+        source: request.source,
+      }),
     });
   }
 

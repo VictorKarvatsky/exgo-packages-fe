@@ -44,10 +44,17 @@ export type AuthContextValue = {
 
 export type TelegramWebAppLoginRequest = {
   initDataRaw: string;
-  // initData: string;
+  /** Telegram bot id (numeric string). Required for multi-tenant mini app. */
+  botId: string;
+  /** Referral code (optional) */
+  ref?: string;
+  /** Traffic source (optional) */
+  source?: string;
 };
 
 export type TelegramWidgetLoginRequest = {
+  /** Telegram bot id (numeric string). Required for multi-tenant. */
+  botId: string;
   id: number;
   first_name: string;
   last_name?: string;
@@ -55,8 +62,9 @@ export type TelegramWidgetLoginRequest = {
   photo_url?: string;
   auth_date: number;
   hash: string;
-  // Referral tracking
+  /** Referral code (optional) */
   ref?: string;
+  /** Traffic source (optional) */
   source?: string;
 };
 

@@ -50,7 +50,14 @@ export const DesktopLoginScreen: FC = () => {
 
           await handleTelegramDeepLinkAuth(authKey, parsedUserData);
 
-          window.history.replaceState({}, '', window.location.pathname);
+          // Сохраняем остальные query параметры, удаляя только auth_key и user_data
+          const newParams = new URLSearchParams(window.location.search);
+          newParams.delete('auth_key');
+          newParams.delete('user_data');
+          const newSearch = newParams.toString();
+          const newUrl =
+            window.location.pathname + (newSearch ? `?${newSearch}` : '');
+          window.history.replaceState({}, '', newUrl);
 
           toaster.create({
             title: t('auth.success'),

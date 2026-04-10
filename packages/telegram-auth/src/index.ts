@@ -1,4 +1,5 @@
 export { AuthProvider } from './components/AuthProvider';
+export type { AuthApiFunctions } from './components/AuthProvider';
 export { LoginScreen } from './components/LoginScreen/LoginScreen';
 export { LogoutButton } from './components/ui/LogoutButton';
 export { withAuthGuard } from './components/withAuthGuard';
@@ -19,3 +20,12 @@ export type {
 
 export { tokenStorage } from './storage';
 export { twaClient } from './telegram';
+
+export {
+  parseClientSessionToken,
+  isClientAccessTokenExpired,
+  isClientRefreshTokenExpired,
+  ensureAccessTokenFresh,
+  resolveTelegramBotId,
+} from './utils';
+export type { ClientSessionTokenPayload } from './utils';

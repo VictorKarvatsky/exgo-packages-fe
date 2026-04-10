@@ -135,7 +135,6 @@ export class TelegramWebAppClient {
       themeParams: this.webApp.themeParams,
       viewportHeight: this.webApp.viewportHeight,
       viewportStableHeight: this.webApp.viewportStableHeight,
-      isMock: process.env.NODE_ENV === 'development',
     };
   }
 }
