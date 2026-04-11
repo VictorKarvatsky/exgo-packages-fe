@@ -1,112 +1,101 @@
-import type { AuthTokens, User } from '../types';
+/**
+ * Token Storage (Hybrid Approach)
+ *
+ * Supports both:
+ * 1. HttpOnly cookies (same-origin/subdomain - most secure)
+ * 2. sessionStorage tokens with Authorization header (cross-origin)
+ *
+ * SECURITY:
+ * - sessionStorage is cleared when browser/tab is closed
+ * - Tokens persist during navigation (better UX for cross-subdomain)
+ * - Isolated per tab (one compromised tab doesn't affect others)
+ * - For same-origin deployments, HttpOnly cookies provide additional security
+ *
+ * FLOW:
+ * - Backend always sets HttpOnly cookies AND returns tokens in response body
+ * - Frontend stores tokens in sessionStorage for Authorization header
+ * - Both mechanisms work simultaneously - backend accepts either
+ */
+
+import type { User } from '../types';
 
 const ACCESS_TOKEN_KEY = 'auth_access_token';
 const REFRESH_TOKEN_KEY = 'auth_refresh_token';
 const USER_DATA_KEY = 'auth_user_data';
 
-const TOKEN_EXPIRY_DAYS = 30;
-
-function isLocalDev(): boolean {
-  if (typeof window === 'undefined') return false;
-  const host = window.location.hostname;
-  return (
-    host === 'localhost' ||
-    host === '127.0.0.1' ||
-    host.endsWith('.ngrok.app') ||
-    host.endsWith('.ngrok.io')
-  );
-}
-
-function getRootDomain(): string {
-  if (typeof window === 'undefined') return '';
-  const host = window.location.hostname;
-  if (isLocalDev()) return '';
-  const parts = host.split('.');
-  if (parts.length >= 2) {
-    return `.${parts.slice(-2).join('.')}`;
-  }
-  return '';
-}
-
-function setCookie(name: string, value: string, days: number): void {
-  const expires = new Date(Date.now() + days * 864e5).toUTCString();
-  const domain = getRootDomain();
-  const domainAttr = domain ? `; domain=${domain}` : '';
-  const secure = window.location.protocol === 'https:' ? '; Secure' : '';
-  const sameSite = secure ? '; SameSite=None' : '; SameSite=Lax';
-  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/${domainAttr}${secure}${sameSite}`;
-}
-
-function getCookie(name: string): string | null {
-  const match = document.cookie.match(new RegExp(`(^| )${name}=([^;]+)`));
-  return match ? decodeURIComponent(match[2]) : null;
-}
-
-function deleteCookie(name: string): void {
-  const domain = getRootDomain();
-  const domainAttr = domain ? `; domain=${domain}` : '';
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/${domainAttr}`;
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+/**
+ * Check if we're in a browser environment.
+ */
+function isBrowser(): boolean {
+  return typeof window !== 'undefined';
 }
 
 export class TokenStorage {
-  private static useLocalStorage(): boolean {
-    return isLocalDev();
+  /**
+   * Store tokens in sessionStorage.
+   * Persists during navigation, cleared when tab closes.
+   */
+  static setTokens(tokens: {
+    accessToken: string;
+    refreshToken: string;
+  }): void {
+    if (!isBrowser()) return;
+    sessionStorage.setItem(ACCESS_TOKEN_KEY, tokens.accessToken);
+    sessionStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
   }
 
-  static setTokens(tokens: AuthTokens): void {
-    if (this.useLocalStorage()) {
-      localStorage.setItem(ACCESS_TOKEN_KEY, tokens.accessToken);
-      localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
-    } else {
-      setCookie(ACCESS_TOKEN_KEY, tokens.accessToken, TOKEN_EXPIRY_DAYS);
-      setCookie(REFRESH_TOKEN_KEY, tokens.refreshToken, TOKEN_EXPIRY_DAYS);
-    }
-  }
-
+  /**
+   * Get access token from sessionStorage.
+   * Used for Authorization header in cross-origin requests.
+   */
   static getAccessToken(): string | null {
-    if (this.useLocalStorage()) {
-      return localStorage.getItem(ACCESS_TOKEN_KEY);
-    }
-    return getCookie(ACCESS_TOKEN_KEY);
+    if (!isBrowser()) return null;
+    return sessionStorage.getItem(ACCESS_TOKEN_KEY);
   }
 
+  /**
+   * Get refresh token from sessionStorage.
+   * Used for token refresh in cross-origin requests.
+   */
   static getRefreshToken(): string | null {
-    if (this.useLocalStorage()) {
-      return localStorage.getItem(REFRESH_TOKEN_KEY);
-    }
-    return getCookie(REFRESH_TOKEN_KEY);
+    if (!isBrowser()) return null;
+    return sessionStorage.getItem(REFRESH_TOKEN_KEY);
   }
 
+  /**
+   * Clear all tokens and user data.
+   */
   static clearTokens(): void {
-    if (this.useLocalStorage()) {
-      localStorage.removeItem(ACCESS_TOKEN_KEY);
-      localStorage.removeItem(REFRESH_TOKEN_KEY);
-      localStorage.removeItem(USER_DATA_KEY);
-    } else {
-      deleteCookie(ACCESS_TOKEN_KEY);
-      deleteCookie(REFRESH_TOKEN_KEY);
-      deleteCookie(USER_DATA_KEY);
-    }
+    if (!isBrowser()) return;
+    sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+    sessionStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(USER_DATA_KEY);
   }
 
+  /**
+   * Check if tokens exist in sessionStorage.
+   */
   static hasTokens(): boolean {
-    return Boolean(this.getAccessToken() && this.getRefreshToken());
+    if (!isBrowser()) return false;
+    return sessionStorage.getItem(ACCESS_TOKEN_KEY) !== null;
   }
 
+  /**
+   * Store user display data (non-sensitive) for UI purposes.
+   * Persisted to localStorage for UX (survives refresh).
+   */
   static setUserData(user: User): void {
-    if (this.useLocalStorage()) {
-      localStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
-    } else {
-      setCookie(USER_DATA_KEY, JSON.stringify(user), TOKEN_EXPIRY_DAYS);
-    }
+    if (!isBrowser()) return;
+    localStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
   }
 
+  /**
+   * Get cached user display data.
+   */
   static getUserData(): User | null {
-    const userData = this.useLocalStorage()
-      ? localStorage.getItem(USER_DATA_KEY)
-      : getCookie(USER_DATA_KEY);
+    if (!isBrowser()) return null;
 
+    const userData = localStorage.getItem(USER_DATA_KEY);
     if (!userData) return null;
 
     try {

@@ -48,10 +48,12 @@ export class AuthApi {
     });
   }
 
-  static async refreshTokens(): Promise<AuthTokens> {
-    const refreshToken = tokenStorage.getRefreshToken();
+  static async refreshTokens(
+    refreshTokenParam?: string
+  ): Promise<AuthTokens | null> {
+    const refreshToken = refreshTokenParam || tokenStorage.getRefreshToken();
     if (!refreshToken) {
-      throw new AuthApiError('No refresh token available', 401);
+      return null;
     }
 
     return apiRequest<AuthTokens>('/api/auth/telegram/refresh', {

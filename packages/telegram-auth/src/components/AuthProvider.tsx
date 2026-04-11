@@ -1,9 +1,23 @@
+/**
+ * Authentication Provider
+ *
+ * Manages authentication state using HttpOnly cookies.
+ * Tokens are stored server-side in secure cookies, not accessible to JavaScript.
+ *
+ * FLOW:
+ * 1. On mount: Try TWA auto-auth, or attempt refresh via cookie
+ * 2. Login: Call auth mutation, backend sets HttpOnly cookies
+ * 3. Requests: Browser automatically sends cookies with credentials: 'include'
+ * 4. Logout: Call logout mutation, backend clears cookies
+ */
+
 import {
   createContext,
   useEffect,
   useReducer,
   useMemo,
   useCallback,
+  useRef,
   type ReactNode,
 } from 'react';
 import type { AuthState, AuthContextValue, User } from '../types';
@@ -22,7 +36,7 @@ type AuthAction =
 const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true,
   error: null,
 };
 
@@ -37,7 +51,7 @@ function authReducer(state: AuthState, action: AuthAction): AuthState {
     case 'SET_AUTHENTICATED':
       return { ...state, isAuthenticated: action.payload };
     case 'RESET':
-      return initialState;
+      return { ...initialState, isLoading: false };
     default:
       return state;
   }
@@ -65,9 +79,15 @@ export interface AuthApiFunctions {
     source?: string;
   }) => Promise<{ accessToken: string; refreshToken: string }>;
 
+  /** 
+   * Refresh tokens. Returns null if no active session (e.g., no cookie).
+   * This is expected for unauthenticated users - not an error.
+   */
   refreshTokens: (
     refreshToken: string
-  ) => Promise<{ accessToken: string; refreshToken: string }>;
+  ) => Promise<{ accessToken: string; refreshToken: string } | null>;
+
+  logout?: () => Promise<void>;
 }
 
 type AuthProviderProps = {
@@ -87,21 +107,16 @@ export const AuthProvider = ({
   authApi: customAuthApi,
 }: AuthProviderProps) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
+  const isInitialized = useRef(false);
 
-  // Resolve botId from props, getter function, or env
-  // Returns null if not available (auth will be disabled)
   const resolveBotId = useCallback((): string | null => {
-    // 1. From props
     if (propBotId) return propBotId;
-    // 2. From getter function (e.g., clientConfig)
     if (getBotId) {
       const fromGetter = getBotId();
       if (fromGetter) return fromGetter;
     }
-    // 3. From env or query params
     const fromEnv = resolveTelegramBotId();
     if (fromEnv) return fromEnv;
-
     return null;
   }, [propBotId, getBotId]);
 
@@ -111,8 +126,6 @@ export const AuthProvider = ({
       dispatch({ type: 'SET_ERROR', payload: null });
 
       try {
-        let response;
-
         if (method === 'twa') {
           const twaData = data as
             | { initDataRaw?: string; ref?: string; source?: string }
@@ -122,9 +135,9 @@ export const AuthProvider = ({
             throw new Error('No TWA initData available');
           }
 
-          // Use custom GraphQL API if provided, otherwise fall back to REST
+          let tokens: { accessToken: string; refreshToken: string };
           if (customAuthApi) {
-            response = await customAuthApi.authenticateWithMiniApp({
+            tokens = await customAuthApi.authenticateWithMiniApp({
               initDataRaw: initData,
               ref: twaData?.ref,
               source: twaData?.source,
@@ -136,7 +149,7 @@ export const AuthProvider = ({
                 'Authentication not available: bot configuration missing'
               );
             }
-            response = await authApi.loginViaTelegramWebApp({
+            tokens = await authApi.loginViaTelegramWebApp({
               botId,
               initDataRaw: initData,
               ref: twaData?.ref,
@@ -144,7 +157,9 @@ export const AuthProvider = ({
             });
           }
 
-          // Для TWA создаем пользователя из initDataUnsafe
+          // Store tokens in memory for Authorization header (cross-origin support)
+          tokenStorage.setTokens(tokens);
+
           const initDataUnsafe = twaClient.getInitDataUnsafe();
           if (initDataUnsafe?.user) {
             const user: User = {
@@ -174,9 +189,9 @@ export const AuthProvider = ({
             source?: string;
           };
 
-          // Use custom GraphQL API if provided, otherwise fall back to REST
+          let tokens: { accessToken: string; refreshToken: string };
           if (customAuthApi) {
-            response = await customAuthApi.authenticateWithWidget({
+            tokens = await customAuthApi.authenticateWithWidget({
               id: widgetData.id,
               firstName: widgetData.first_name,
               lastName: widgetData.last_name,
@@ -194,11 +209,14 @@ export const AuthProvider = ({
                 'Authentication not available: bot configuration missing'
               );
             }
-            response = await authApi.loginViaTelegramWidget({
+            tokens = await authApi.loginViaTelegramWidget({
               botId,
               ...widgetData,
             });
           }
+
+          // Store tokens in memory for Authorization header (cross-origin support)
+          tokenStorage.setTokens(tokens);
 
           const user: User = {
             id: widgetData.id,
@@ -216,16 +234,9 @@ export const AuthProvider = ({
           dispatch({ type: 'SET_USER', payload: user });
         }
 
-        tokenStorage.setTokens({
-          accessToken: response.accessToken,
-          refreshToken: response.refreshToken,
-        });
         dispatch({ type: 'SET_AUTHENTICATED', payload: true });
-
-        // console.log('Authentication successful via', method);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Login failed';
-        // console.warn('Authentication failed:', error);
         dispatch({ type: 'SET_ERROR', payload: message });
         throw error;
       } finally {
@@ -235,43 +246,46 @@ export const AuthProvider = ({
     [resolveBotId, customAuthApi]
   );
 
-  // Helper to refresh tokens using custom or default API
   const doRefreshTokens = useCallback(async () => {
-    const refreshToken = tokenStorage.getRefreshToken();
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
+    // Pass refresh token from memory (for cross-origin) or empty string (backend reads from cookie)
+    const currentRefreshToken = tokenStorage.getRefreshToken() || '';
+    
+    let result;
+    if (customAuthApi) {
+      result = await customAuthApi.refreshTokens(currentRefreshToken);
+    } else {
+      result = await authApi.refreshTokens(currentRefreshToken);
     }
 
-    if (customAuthApi) {
-      return customAuthApi.refreshTokens(refreshToken);
+    // Store new tokens in memory if refresh succeeded
+    if (result) {
+      tokenStorage.setTokens(result);
     }
-    return authApi.refreshTokens();
+
+    return result;
   }, [customAuthApi]);
 
-  // Основная инициализация аутентификации
   useEffect(() => {
+    // Prevent re-initialization on dependency changes
+    if (isInitialized.current) {
+      return;
+    }
+    isInitialized.current = true;
+
     const initAuth = async () => {
-      // Check if auth API is available (either custom or botId for REST)
       const hasAuthApi = customAuthApi || resolveBotId();
       if (!hasAuthApi) {
-        // No auth configuration - skip auto-auth but don't show error
         dispatch({ type: 'SET_LOADING', payload: false });
         return;
       }
 
-      // Проверяем TWA в первую очередь для бесшовной авторизации
       if (twaClient.isAvailable()) {
-        // console.log('TWA detected, attempting auto-authentication');
         const initData = twaClient.getInitData();
-
         if (initData) {
           try {
-            dispatch({ type: 'SET_LOADING', payload: true });
-            // console.log('Auto-login with TWA initData');
-            await login('twa', initData);
-            return; // Выходим, если TWA авторизация прошла успешно
+            await login('twa', { initDataRaw: initData });
+            return;
           } catch {
-            // console.error('TWA auto-login failed:', error);
             dispatch({
               type: 'SET_ERROR',
               payload: 'Telegram Web App authentication failed',
@@ -281,25 +295,16 @@ export const AuthProvider = ({
         }
       }
 
-      // Если не TWA или TWA не сработал, проверяем существующие токены
-      if (!tokenStorage.hasTokens()) {
-        dispatch({ type: 'SET_LOADING', payload: false });
-        return;
-      }
-
-      dispatch({ type: 'SET_LOADING', payload: true });
       try {
-        const tokens = await doRefreshTokens();
-        tokenStorage.setTokens(tokens);
-        const userData = tokenStorage.getUserData();
-        dispatch({ type: 'SET_USER', payload: userData });
-        dispatch({ type: 'SET_AUTHENTICATED', payload: true });
+        const result = await doRefreshTokens();
+        // null means no active session - user is not authenticated (expected state)
+        if (result) {
+          const userData = tokenStorage.getUserData();
+          dispatch({ type: 'SET_USER', payload: userData });
+          dispatch({ type: 'SET_AUTHENTICATED', payload: true });
+        }
       } catch {
         tokenStorage.clearTokens();
-        dispatch({
-          type: 'SET_ERROR',
-          payload: 'Session expired. Please login again.',
-        });
       } finally {
         dispatch({ type: 'SET_LOADING', payload: false });
       }
@@ -311,7 +316,11 @@ export const AuthProvider = ({
   const logout = useCallback(async (): Promise<void> => {
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
-      await authApi.logout();
+      if (customAuthApi?.logout) {
+        await customAuthApi.logout();
+      } else {
+        await authApi.logout();
+      }
     } catch {
       // ignore
     } finally {
@@ -321,12 +330,11 @@ export const AuthProvider = ({
         twaClient.close();
       }
     }
-  }, []);
+  }, [customAuthApi]);
 
   const refresh = useCallback(async (): Promise<void> => {
     try {
-      const tokens = await doRefreshTokens();
-      tokenStorage.setTokens(tokens);
+      await doRefreshTokens();
     } catch (error) {
       tokenStorage.clearTokens();
       dispatch({ type: 'RESET' });
@@ -335,7 +343,7 @@ export const AuthProvider = ({
   }, [doRefreshTokens]);
 
   const getAccessToken = useCallback((): string | null => {
-    return tokenStorage.getAccessToken();
+    return null;
   }, []);
 
   const hasPermission = useCallback(

@@ -50,8 +50,12 @@ export async function ensureAccessTokenFresh(): Promise<void> {
 
   refreshInFlight = (async () => {
     try {
-      const tokens = await authApi.refreshTokens();
-      tokenStorage.setTokens(tokens);
+      const tokens = await authApi.refreshTokens(refresh);
+      if (tokens) {
+        tokenStorage.setTokens(tokens);
+      } else {
+        tokenStorage.clearTokens();
+      }
     } catch {
       tokenStorage.clearTokens();
     } finally {
