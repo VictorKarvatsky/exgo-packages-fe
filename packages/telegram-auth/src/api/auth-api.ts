@@ -76,12 +76,9 @@ export class AuthApi {
   }
 
   static async logout(): Promise<void> {
-    const refreshToken = tokenStorage.getRefreshToken();
-    if (!refreshToken) return;
-
     await apiRequest<void>('/api/auth/telegram/logout', {
       method: 'POST',
-      body: null,
+      body: JSON.stringify({}),
     }).catch(() => {});
   }
 }

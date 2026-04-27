@@ -1,5 +1,6 @@
 export type TelegramWebAppUser = {
   id: number;
+  is_bot?: boolean;
   first_name: string;
   last_name?: string;
   username?: string;
@@ -51,13 +52,31 @@ export type TelegramDeepLinkAuthData = TelegramLoginWidgetData & {
   auth_key: string;
 };
 
+/** Theme colors from Telegram Mini App (Bot WebApp API). */
+export type TelegramThemeParams = {
+  [key: string]: string | undefined;
+  bg_color?: string;
+  text_color?: string;
+  hint_color?: string;
+  link_color?: string;
+  button_color?: string;
+  button_text_color?: string;
+  secondary_bg_color?: string;
+  header_bg_color?: string;
+  accent_text_color?: string;
+  section_bg_color?: string;
+  section_header_text_color?: string;
+  subtitle_text_color?: string;
+  destructive_text_color?: string;
+};
+
 export type TelegramWebApp = {
   initData: string;
   initDataUnsafe: TelegramWebAppInitData;
   version: string;
   platform: string;
   colorScheme: 'light' | 'dark';
-  themeParams: Record<string, string>;
+  themeParams: TelegramThemeParams;
   isExpanded: boolean;
   isFullscreen: boolean;
   viewportHeight: number;
@@ -100,6 +119,12 @@ export type TelegramWebApp = {
     notificationOccurred: (type: 'error' | 'success' | 'warning') => void;
     selectionChanged: () => void;
   };
+  enableClosingConfirmation: () => void;
+  disableClosingConfirmation: () => void;
+  setHeaderColor: (color: 'bg_color' | 'secondary_bg_color' | string) => void;
+  setBackgroundColor: (
+    color: 'bg_color' | 'secondary_bg_color' | string
+  ) => void;
   showPopup: (params: {
     title?: string;
     message: string;
@@ -109,6 +134,14 @@ export type TelegramWebApp = {
       text?: string;
     }>;
   }) => Promise<string>;
-  showAlert: (message: string) => Promise<void>;
-  showConfirm: (message: string) => Promise<boolean>;
+  showAlert: (message: string, callback?: () => void) => Promise<void>;
+  showConfirm: (
+    message: string,
+    callback?: (confirmed: boolean) => void
+  ) => Promise<boolean>;
+  openLink: (url: string, options?: { try_instant_view?: boolean }) => void;
+  openTelegramLink: (url: string) => void;
+  sendData: (data: string) => void;
+  onEvent: (eventType: string, eventHandler: () => void) => void;
+  offEvent: (eventType: string, eventHandler: () => void) => void;
 };

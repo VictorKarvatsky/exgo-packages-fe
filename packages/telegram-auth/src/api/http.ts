@@ -3,32 +3,21 @@ import { twaClient } from '../telegram/twa-client';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-type ApiErrorBody =
-  | {
-      message?: unknown;
-      code?: unknown;
-    }
-  | null
-  | undefined;
-
 function hasStringMessage(x: unknown): x is { message: string } {
-  return (
-    !!x &&
-    typeof x === 'object' &&
-    'message' in x &&
-    typeof (x as Record<string, unknown>).message === 'string'
-  );
+  if (!x || typeof x !== 'object' || !('message' in x)) return false;
+  const msg = Reflect.get(x, 'message');
+  return typeof msg === 'string';
 }
 
 function hasCode(x: unknown): x is { code: string | number } {
   if (!x || typeof x !== 'object' || !('code' in x)) return false;
-  const v = (x as Record<string, unknown>).code;
+  const v = Reflect.get(x, 'code');
   return typeof v === 'string' || typeof v === 'number';
 }
 
-async function safeJson<T = unknown>(res: Response): Promise<T | undefined> {
+async function safeJson(res: Response): Promise<unknown | undefined> {
   try {
-    return (await res.json()) as T;
+    return await res.json();
   } catch {
     return undefined;
   }
@@ -45,6 +34,7 @@ export async function apiRequest<T>(
 
   const response = await fetch(url, {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       'client-type': clientType,
@@ -53,7 +43,7 @@ export async function apiRequest<T>(
   });
 
   if (!response.ok) {
-    const body = await safeJson<ApiErrorBody>(response);
+    const body: unknown = await safeJson(response);
 
     const message = hasStringMessage(body) ? body.message : 'Network error';
     const code = hasCode(body) ? String(body.code) : undefined;
@@ -61,6 +51,7 @@ export async function apiRequest<T>(
     throw new AuthApiError(message, response.status, code);
   }
 
-  const data = await response.json();
+  const data: unknown = await response.json();
+  /** Caller supplies `T` consistent with this endpoint’s JSON contract. */
   return data as T;
 }

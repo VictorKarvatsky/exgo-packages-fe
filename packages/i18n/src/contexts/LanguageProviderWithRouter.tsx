@@ -1,8 +1,8 @@
-import { FC, PropsWithChildren, useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { LanguageProvider } from "./LanguageContext";
-import type { Language } from "../types";
-import { getBrowserLanguage } from "../utils/browser-language";
+import { FC, PropsWithChildren, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { LanguageProvider } from './LanguageContext';
+import type { Language } from '../types';
+import { getBrowserLanguage } from '../utils/browser-language';
 
 /**
  * LanguageProvider с поддержкой URL search параметров
@@ -19,10 +19,10 @@ export const LanguageProviderWithRouter: FC<PropsWithChildren> = ({
 
   // Определяем начальный язык
   const getInitialLanguage = (): Language => {
-    const langParam = searchParams.get("lang");
+    const langParam = searchParams.get('lang');
 
     // Если в URL есть параметр lang и он валидный
-    if (langParam === "en" || langParam === "ru") {
+    if (langParam === 'en' || langParam === 'ru') {
       return langParam;
     }
 
@@ -34,7 +34,7 @@ export const LanguageProviderWithRouter: FC<PropsWithChildren> = ({
 
   // Синхронизация языка с URL при первой загрузке
   useEffect(() => {
-    const langParam = searchParams.get("lang");
+    const langParam = searchParams.get('lang');
 
     // Если параметра нет в URL, добавляем его (сохраняя остальные параметры)
     if (!langParam) {
@@ -62,19 +62,14 @@ export const LanguageProviderWithRouter: FC<PropsWithChildren> = ({
 
   // Обновляем язык при изменении URL (например, при навигации назад/вперед)
   useEffect(() => {
-    const langParam = searchParams.get("lang");
-    if (langParam === "en" || langParam === "ru") {
+    const langParam = searchParams.get('lang');
+    if (langParam === 'en' || langParam === 'ru') {
       if (langParam !== language) {
         setLanguageState(langParam);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
-
-  // Обновляем атрибут lang в HTML
-  useEffect(() => {
-    document.documentElement.lang = language;
-  }, [language]);
 
   return (
     <LanguageProvider language={language} setLanguage={setLanguage}>

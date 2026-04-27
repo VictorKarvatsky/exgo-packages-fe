@@ -1,5 +1,28 @@
 import type { TelegramWebApp, TelegramWebAppInitData } from '../types';
 
+const IMPACT_STYLES = ['light', 'medium', 'heavy', 'rigid', 'soft'] as const;
+const NOTIFICATION_STYLES = ['error', 'success', 'warning'] as const;
+
+function isImpactHapticStyle(s: string): s is (typeof IMPACT_STYLES)[number] {
+  return (IMPACT_STYLES as readonly string[]).includes(s);
+}
+
+function isNotificationHapticStyle(
+  s: string
+): s is (typeof NOTIFICATION_STYLES)[number] {
+  return (NOTIFICATION_STYLES as readonly string[]).includes(s);
+}
+
+function isTelegramWebAppShape(x: unknown): x is TelegramWebApp {
+  if (typeof x !== 'object' || x === null) return false;
+  return (
+    'initData' in x &&
+    typeof Reflect.get(x, 'initData') === 'string' &&
+    'ready' in x &&
+    typeof Reflect.get(x, 'ready') === 'function'
+  );
+}
+
 export class TelegramWebAppClient {
   private webApp: TelegramWebApp | null = null;
 
@@ -9,7 +32,11 @@ export class TelegramWebAppClient {
 
   private init(): void {
     if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-      const webApp = window.Telegram.WebApp as TelegramWebApp;
+      const raw = window.Telegram.WebApp;
+      if (!isTelegramWebAppShape(raw)) {
+        return;
+      }
+      const webApp = raw;
       this.webApp = webApp;
       webApp.ready();
 
@@ -108,14 +135,14 @@ export class TelegramWebAppClient {
   ): void {
     if (!this.webApp?.HapticFeedback) return;
 
-    if (type === 'impact' && style) {
-      this.webApp.HapticFeedback.impactOccurred(
-        style as 'light' | 'medium' | 'heavy' | 'rigid' | 'soft'
-      );
-    } else if (type === 'notification' && style) {
-      this.webApp.HapticFeedback.notificationOccurred(
-        style as 'error' | 'success' | 'warning'
-      );
+    if (type === 'impact' && style && isImpactHapticStyle(style)) {
+      this.webApp.HapticFeedback.impactOccurred(style);
+    } else if (
+      type === 'notification' &&
+      style &&
+      isNotificationHapticStyle(style)
+    ) {
+      this.webApp.HapticFeedback.notificationOccurred(style);
     } else if (type === 'selection') {
       this.webApp.HapticFeedback.selectionChanged();
     }

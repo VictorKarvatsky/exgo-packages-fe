@@ -1,97 +1,95 @@
 /**
- * Token Storage (Hybrid Approach)
+ * Token storage — HttpOnly cookies only (dev and prod identical)
  *
- * Supports both:
- * 1. HttpOnly cookies (same-origin/subdomain - most secure)
- * 2. sessionStorage tokens with Authorization header (cross-origin)
+ * OS client GraphQL sets `access_token` / `refresh_token` as HttpOnly cookies.
+ * The browser sends them with `credentials: 'include'`. JWTs are never written to
+ * sessionStorage or localStorage (XSS cannot read HttpOnly cookies).
  *
- * SECURITY:
- * - sessionStorage is cleared when browser/tab is closed
- * - Tokens persist during navigation (better UX for cross-subdomain)
- * - Isolated per tab (one compromised tab doesn't affect others)
- * - For same-origin deployments, HttpOnly cookies provide additional security
- *
- * FLOW:
- * - Backend always sets HttpOnly cookies AND returns tokens in response body
- * - Frontend stores tokens in sessionStorage for Authorization header
- * - Both mechanisms work simultaneously - backend accepts either
+ * `exgo_auth_session` is a non-secret tab hint for router guards after login;
+ * new tabs rely on cookie + GraphQL `refreshToken` with an empty body.
  */
 
 import type { User } from '../types';
 
+function isStringArray(x: unknown): x is string[] {
+  return Array.isArray(x) && x.every((item) => typeof item === 'string');
+}
+
+function isUser(x: unknown): x is User {
+  if (typeof x !== 'object' || x === null) return false;
+  const o = x;
+  return (
+    typeof Reflect.get(o, 'id') === 'number' &&
+    typeof Reflect.get(o, 'telegramId') === 'number' &&
+    typeof Reflect.get(o, 'firstName') === 'string' &&
+    isStringArray(Reflect.get(o, 'roles')) &&
+    isStringArray(Reflect.get(o, 'permissions')) &&
+    typeof Reflect.get(o, 'createdAt') === 'string' &&
+    typeof Reflect.get(o, 'updatedAt') === 'string'
+  );
+}
+
 const ACCESS_TOKEN_KEY = 'auth_access_token';
 const REFRESH_TOKEN_KEY = 'auth_refresh_token';
 const USER_DATA_KEY = 'auth_user_data';
+const AUTH_SESSION_HINT_KEY = 'exgo_auth_session';
 
-/**
- * Check if we're in a browser environment.
- */
 function isBrowser(): boolean {
   return typeof window !== 'undefined';
 }
 
+function stripLegacyJwtFromStorage(): void {
+  if (!isBrowser()) return;
+  try {
+    sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+    sessionStorage.removeItem(REFRESH_TOKEN_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+stripLegacyJwtFromStorage();
+
 export class TokenStorage {
-  /**
-   * Store tokens in sessionStorage.
-   * Persists during navigation, cleared when tab closes.
-   */
-  static setTokens(tokens: {
+  /** Records session for this tab; cookies hold JWTs. `tokens` is ignored for storage (kept for call-site compatibility). */
+  static setTokens(_tokens: {
     accessToken: string;
     refreshToken: string;
   }): void {
     if (!isBrowser()) return;
-    sessionStorage.setItem(ACCESS_TOKEN_KEY, tokens.accessToken);
-    sessionStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
+    stripLegacyJwtFromStorage();
+    try {
+      sessionStorage.setItem(AUTH_SESSION_HINT_KEY, '1');
+    } catch {
+      // ignore
+    }
   }
 
-  /**
-   * Get access token from sessionStorage.
-   * Used for Authorization header in cross-origin requests.
-   */
   static getAccessToken(): string | null {
-    if (!isBrowser()) return null;
-    return sessionStorage.getItem(ACCESS_TOKEN_KEY);
+    return null;
   }
 
-  /**
-   * Get refresh token from sessionStorage.
-   * Used for token refresh in cross-origin requests.
-   */
   static getRefreshToken(): string | null {
-    if (!isBrowser()) return null;
-    return sessionStorage.getItem(REFRESH_TOKEN_KEY);
+    return null;
   }
 
-  /**
-   * Clear all tokens and user data.
-   */
   static clearTokens(): void {
     if (!isBrowser()) return;
-    sessionStorage.removeItem(ACCESS_TOKEN_KEY);
-    sessionStorage.removeItem(REFRESH_TOKEN_KEY);
+    stripLegacyJwtFromStorage();
+    sessionStorage.removeItem(AUTH_SESSION_HINT_KEY);
     localStorage.removeItem(USER_DATA_KEY);
   }
 
-  /**
-   * Check if tokens exist in sessionStorage.
-   */
   static hasTokens(): boolean {
     if (!isBrowser()) return false;
-    return sessionStorage.getItem(ACCESS_TOKEN_KEY) !== null;
+    return sessionStorage.getItem(AUTH_SESSION_HINT_KEY) === '1';
   }
 
-  /**
-   * Store user display data (non-sensitive) for UI purposes.
-   * Persisted to localStorage for UX (survives refresh).
-   */
   static setUserData(user: User): void {
     if (!isBrowser()) return;
     localStorage.setItem(USER_DATA_KEY, JSON.stringify(user));
   }
 
-  /**
-   * Get cached user display data.
-   */
   static getUserData(): User | null {
     if (!isBrowser()) return null;
 
@@ -99,7 +97,8 @@ export class TokenStorage {
     if (!userData) return null;
 
     try {
-      return JSON.parse(userData) as User;
+      const parsed: unknown = JSON.parse(userData);
+      return isUser(parsed) ? parsed : null;
     } catch {
       return null;
     }

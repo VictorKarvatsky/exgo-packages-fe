@@ -79,7 +79,7 @@ export interface AuthApiFunctions {
     source?: string;
   }) => Promise<{ accessToken: string; refreshToken: string }>;
 
-  /** 
+  /**
    * Refresh tokens. Returns null if no active session (e.g., no cookie).
    * This is expected for unauthenticated users - not an error.
    */
@@ -157,7 +157,6 @@ export const AuthProvider = ({
             });
           }
 
-          // Store tokens in memory for Authorization header (cross-origin support)
           tokenStorage.setTokens(tokens);
 
           const initDataUnsafe = twaClient.getInitDataUnsafe();
@@ -215,7 +214,6 @@ export const AuthProvider = ({
             });
           }
 
-          // Store tokens in memory for Authorization header (cross-origin support)
           tokenStorage.setTokens(tokens);
 
           const user: User = {
@@ -249,7 +247,7 @@ export const AuthProvider = ({
   const doRefreshTokens = useCallback(async () => {
     // Pass refresh token from memory (for cross-origin) or empty string (backend reads from cookie)
     const currentRefreshToken = tokenStorage.getRefreshToken() || '';
-    
+
     let result;
     if (customAuthApi) {
       result = await customAuthApi.refreshTokens(currentRefreshToken);
@@ -279,19 +277,19 @@ export const AuthProvider = ({
         return;
       }
 
-      if (twaClient.isAvailable()) {
-        const initData = twaClient.getInitData();
-        if (initData) {
-          try {
-            await login('twa', { initDataRaw: initData });
-            return;
-          } catch {
-            dispatch({
-              type: 'SET_ERROR',
-              payload: 'Telegram Web App authentication failed',
-            });
-            return;
-          }
+      const isTwaAvailable = twaClient.isAvailable();
+      const initData = twaClient.getInitData();
+
+      if (isTwaAvailable && initData) {
+        try {
+          await login('twa', { initDataRaw: initData });
+          return;
+        } catch {
+          dispatch({
+            type: 'SET_ERROR',
+            payload: 'Telegram Web App authentication failed',
+          });
+          return;
         }
       }
 

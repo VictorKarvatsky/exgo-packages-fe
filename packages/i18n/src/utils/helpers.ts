@@ -1,19 +1,26 @@
 import type { LocaleObject } from '../types';
 
+function isLocaleBranch(value: unknown): value is LocaleObject {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 /**
  * Получает значение из вложенного объекта по ключу с точками
  * Например: getValue(obj, 'user.profile.name')
  */
 export function getValue(obj: LocaleObject, path: string): string {
   const keys = path.split('.');
-  let current: any = obj;
+  let current: string | LocaleObject = obj;
 
   for (const key of keys) {
-    if (current && typeof current === 'object' && key in current) {
-      current = current[key];
-    } else {
-      return path; // Возвращаем ключ, если не найден перевод
+    if (!isLocaleBranch(current)) {
+      return path;
     }
+    if (!Object.prototype.hasOwnProperty.call(current, key)) {
+      return path;
+    }
+    const next: string | LocaleObject = current[key];
+    current = next;
   }
 
   return typeof current === 'string' ? current : path;

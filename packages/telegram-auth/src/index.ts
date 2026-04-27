@@ -1,3 +1,5 @@
+import './telegram/window-telegram';
+
 export { AuthProvider } from './components/AuthProvider';
 export type { AuthApiFunctions } from './components/AuthProvider';
 export { LoginScreen } from './components/LoginScreen/LoginScreen';
@@ -16,6 +18,9 @@ export type {
   TelegramLoginWidgetData,
   TelegramDeepLinkUserData,
   TelegramDeepLinkAuthData,
+  TelegramWebApp,
+  TelegramWebAppUser,
+  TelegramThemeParams,
 } from './types';
 
 export { tokenStorage } from './storage';
