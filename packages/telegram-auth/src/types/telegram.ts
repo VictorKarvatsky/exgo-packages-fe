@@ -85,11 +85,26 @@ export type TelegramWebApp = {
   backgroundColor: string;
   isClosingConfirmationEnabled: boolean;
   isVerticalSwipesEnabled: boolean;
+  /** Bot API 8.0+ — OS-level safe area (status bar, home indicator). */
+  safeAreaInset?: { top: number; bottom: number; left: number; right: number };
+  /**
+   * Bot API 8.0+ — Telegram-specific safe area on top of OS one.
+   * In fullscreen mode this covers the close-button overlay; in non-fullscreen all values are 0.
+   */
+  contentSafeAreaInset?: {
+    top: number;
+    bottom: number;
+    left: number;
+    right: number;
+  };
   ready: () => void;
   expand: () => void;
   close: () => void;
   requestFullscreen: () => void;
   exitFullscreen: () => void;
+  /** Bot API 7.7+ — disables the “swipe down to close” gesture that causes overscroll over the header. */
+  disableVerticalSwipes?: () => void;
+  enableVerticalSwipes?: () => void;
   MainButton: {
     text: string;
     color: string;

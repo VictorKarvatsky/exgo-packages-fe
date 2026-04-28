@@ -52,7 +52,47 @@ export class TelegramWebAppClient {
       if (webApp.initData && webApp.requestFullscreen && !isDesktop) {
         webApp.requestFullscreen();
       }
+
+      // Kill the “swipe down to close” gesture — its overscroll lifts the
+      // navbar away from the top edge and exposes a Telegram chrome strip
+      // that the user reads as “content overlapping header”.
+      // No-op on platforms without Bot API 7.7+.
+      webApp.disableVerticalSwipes?.();
+
+      // Publish Telegram safe-area to CSS so layouts can use
+      // `var(--tg-content-safe-area-top, 0px)` alongside `env(safe-area-inset-top)`.
+      // In fullscreen mode contentSafeAreaInset.top covers the close-button overlay
+      // that env() does NOT see — without this the navbar renders under the overlay.
+      this.publishSafeAreaToCss();
+      const onSafeAreaChanged = () => this.publishSafeAreaToCss();
+      webApp.onEvent('safeAreaChanged', onSafeAreaChanged);
+      webApp.onEvent('contentSafeAreaChanged', onSafeAreaChanged);
     }
+  }
+
+  private publishSafeAreaToCss(): void {
+    if (typeof document === 'undefined') return;
+    const tg = this.webApp;
+    if (!tg) return;
+    const root = document.documentElement;
+    const setVar = (name: string, px: number) => {
+      root.style.setProperty(name, `${Math.max(0, Math.round(px))}px`);
+    };
+    const safe = tg.safeAreaInset ?? { top: 0, bottom: 0, left: 0, right: 0 };
+    const content = tg.contentSafeAreaInset ?? {
+      top: 0,
+      bottom: 0,
+      left: 0,
+      right: 0,
+    };
+    setVar('--tg-safe-area-top', safe.top);
+    setVar('--tg-safe-area-bottom', safe.bottom);
+    setVar('--tg-safe-area-left', safe.left);
+    setVar('--tg-safe-area-right', safe.right);
+    setVar('--tg-content-safe-area-top', content.top);
+    setVar('--tg-content-safe-area-bottom', content.bottom);
+    setVar('--tg-content-safe-area-left', content.left);
+    setVar('--tg-content-safe-area-right', content.right);
   }
 
   isAvailable(): boolean {
